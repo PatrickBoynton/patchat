@@ -6,6 +6,7 @@ import mongoSanitize from 'express-mongo-sanitize'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
 import fileUpload from 'express-fileupload'
+import createHttpError from 'http-errors'
 
 dotenv.config()
 
@@ -35,8 +36,21 @@ app.use(
 	})
 )
 
-app.get('/', (req, res) => {
-	res.send('The API is running!')
+app.use('/', (req, res) => {
+	res.json({ message: 'The API is running!' })
+})
+
+app.use(async (err, req, res, next) => {
+	res.status(err.status || 500)
+	res.send({
+		error: {
+			status: err.status || 500,
+			message: err.message,
+		},
+	})
+})
+app.use(async (err, req, res, next) => {
+	next(createHttpError.NotFound('This route exists not!'))
 })
 
 app.listen(PORT, () => console.log(`Go to http://localhost:${PORT}`))
