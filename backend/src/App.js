@@ -36,21 +36,23 @@ app.use(
 	})
 )
 
-app.use('/', (req, res) => {
-	res.json({ message: 'The API is running!' })
+app.get('/', (req, res) => {
+	throw createHttpError.BadRequest('A bad thing happened!')
+})
+
+
+app.use(async (req, res, next) => {
+	next(createHttpError.NotFound('Route found is not.'))
 })
 
 app.use(async (err, req, res, next) => {
 	res.status(err.status || 500)
 	res.send({
 		error: {
-			status: err.status || 500,
-			message: err.message,
-		},
+				status: err.status || 500,
+				message: err.message
+		}
 	})
-})
-app.use(async (err, req, res, next) => {
-	next(createHttpError.NotFound('This route exists not!'))
 })
 
 app.listen(PORT, () => console.log(`Go to http://localhost:${PORT}`))
