@@ -11,7 +11,7 @@ const logger = winston.createLogger({
     level: process.env.NODE_ENV === 'development' ? "debug" : "info",
     format: winston.format.combine(
         enumeratedFormat(),
-        process.env.NODE_ENV === 'development' ?
+        process.env.NODE_ENV !== 'production' ?
             winston.format.colorize() :
             winston.format.uncolorize(),
         winston.format.splat(),
