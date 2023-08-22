@@ -8,8 +8,8 @@ import compression from 'compression'
 import fileUpload from 'express-fileupload'
 import createHttpError from 'http-errors'
 import routes from './routes/index.js'
-import mongoose from "mongoose";
 import logger from "./config/logger.js";
+import {connectDB} from "./config/connect.js";
 
 dotenv.config()
 
@@ -18,21 +18,7 @@ const app = express()
 const {PORT, DATABASE_URL} = process.env
 
 
-mongoose.connection.on('error', (e) => {
-    logger.error(`MongoDB connection error: ${e}`)
-    process.exit(1)
-})
-
-if (process.env.NODE_ENV === 'development') {
-    mongoose.set('debug', true)
-}
-
-mongoose.connect(DATABASE_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
-    logger.info('Connected to the database!')
-})
+connectDB(DATABASE_URL)
 
 app.use(express.json())
 
@@ -56,6 +42,10 @@ app.use(
     })
 )
 
+app.get("/", (req, res) => {
+    res.send('API IS RUNNING!')
+})
+
 app.use('/api', routes)
 
 
@@ -73,4 +63,32 @@ app.use(async (err, req, res, next) => {
     })
 })
 
-app.listen(PORT, () => logger.info(`Go to http://localhost:${PORT}`))
+const server = app.listen(PORT, () => {
+    logger.info(`Go to http://localhost:${PORT}`)
+    const pid = process.pid
+    logger.info(`PID: ${pid}`)
+})
+
+const exitHandler = () => {
+    if (server) {
+        logger.info('Server closed')
+        process.exit(1)
+    } else {
+        process.exit(1)
+    }
+}
+
+const unexpectedErrorHandler = (error) => {
+    logger.error(error)
+    exitHandler()
+}
+
+process.on("uncaughtException", unexpectedErrorHandler)
+process.on("unhandledRejection", unexpectedErrorHandler)
+process.on("SIGTERM", () => {
+    if (server) {
+        logger.info('Server is closed.')
+        process.exit(1)
+    }
+})
+
